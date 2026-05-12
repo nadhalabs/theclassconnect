@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, college
+from routes import auth, college 
 from database import engine, Base
 
 # Create all tables
