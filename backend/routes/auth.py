@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from passlib.context import CryptContext
 from database import get_db
 from models import User, OTP
@@ -8,6 +8,12 @@ from utils.email import generate_otp, send_otp_email
 
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+# ─────────────────────────────────────────────
+# DEV MODE — set to False when domain is ready
+# ─────────────────────────────────────────────
+DEV_MODE = True
+DEV_OTP  = "123456"
 
 # ─────────────────────────────────────────────
 # SCHEMAS
@@ -39,35 +45,26 @@ class CollegeRequest(BaseModel):
 # ─────────────────────────────────────────────
 @router.post("/register")
 def register(req: RegisterRequest, db: Session = Depends(get_db)):
-    # Check if user already exists
     existing = db.query(User).filter(User.email == req.email).first()
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Hash password
     hashed = pwd_context.hash(req.password)
-
-    # Create user
     user = User(email=req.email, password=hashed, is_verified=False)
     db.add(user)
     db.commit()
 
-    # Generate and send OTP
     otp = generate_otp()
-
-    # Delete any old OTPs for this email
     db.query(OTP).filter(OTP.email == req.email).delete()
     db.commit()
-
-    # Save new OTP
     otp_entry = OTP(email=req.email, otp_code=otp)
     db.add(otp_entry)
     db.commit()
 
-    # Send OTP email
-    sent = send_otp_email(req.email, otp)
-    if not sent:
-        raise HTTPException(status_code=500, detail="Failed to send OTP email")
+    send_otp_email(req.email, otp)
+
+    if DEV_MODE:
+        return {"message": "OTP sent to email (DEV MODE: use 123456)", "email": req.email}
 
     return {"message": "OTP sent to email", "email": req.email}
 
@@ -84,7 +81,6 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Incorrect password")
 
     if not user.is_verified:
-        # Resend OTP
         otp = generate_otp()
         db.query(OTP).filter(OTP.email == req.email).delete()
         db.commit()
@@ -107,6 +103,14 @@ def login(req: LoginRequest, db: Session = Depends(get_db)):
 # ─────────────────────────────────────────────
 @router.post("/verify-otp")
 def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
+    # DEV MODE: accept master OTP
+    if DEV_MODE and req.otp_code == DEV_OTP:
+        user = db.query(User).filter(User.email == req.email).first()
+        if user:
+            user.is_verified = True
+            db.commit()
+        return {"message": "OTP verified successfully", "email": req.email}
+
     otp_entry = db.query(OTP).filter(
         OTP.email == req.email,
         OTP.otp_code == req.otp_code
@@ -115,13 +119,11 @@ def verify_otp(req: VerifyOTPRequest, db: Session = Depends(get_db)):
     if not otp_entry:
         raise HTTPException(status_code=400, detail="Invalid OTP")
 
-    # Mark user as verified
     user = db.query(User).filter(User.email == req.email).first()
     if user:
         user.is_verified = True
         db.commit()
 
-    # Delete used OTP
     db.delete(otp_entry)
     db.commit()
 
@@ -139,14 +141,13 @@ def resend_otp(req: RegisterRequest, db: Session = Depends(get_db)):
     otp = generate_otp()
     db.query(OTP).filter(OTP.email == req.email).delete()
     db.commit()
-
     otp_entry = OTP(email=req.email, otp_code=otp)
     db.add(otp_entry)
     db.commit()
+    send_otp_email(req.email, otp)
 
-    sent = send_otp_email(req.email, otp)
-    if not sent:
-        raise HTTPException(status_code=500, detail="Failed to send OTP email")
+    if DEV_MODE:
+        return {"message": "OTP resent (DEV MODE: use 123456)"}
 
     return {"message": "OTP resent successfully"}
 
@@ -159,7 +160,6 @@ def save_profile(req: ProfileRequest, db: Session = Depends(get_db)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Check username taken
     existing = db.query(User).filter(User.username == req.username).first()
     if existing and existing.email != req.email:
         raise HTTPException(status_code=400, detail="Username already taken")
