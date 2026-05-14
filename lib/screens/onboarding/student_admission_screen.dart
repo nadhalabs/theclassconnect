@@ -41,21 +41,25 @@ class _StudentAdmissionScreenState extends State<StudentAdmissionScreen> {
         "roll_no": parsed!['roll_no'],
         "year_joined": parsed!['year'],
       });
+      if (!mounted) return; // ← ADDED mounted check after await
       if (res.statusCode == 200) {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => StudentHome(
-                email: widget.email,
-                name: widget.name,
-                stream: parsed!['stream']!,
-                semester: parsed!['semester']!,
-                isApproved: false)),
+        Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+                builder: (_) => StudentHome(
+                    email: widget.email,
+                    name: widget.name,
+                    stream: parsed!['stream']!,
+                    semester: parsed!['semester']!,
+                    isApproved: false)),
             (_) => false);
       }
     } on DioException catch (e) {
+      if (!mounted) return; // ← ADDED mounted check before showing snack
       final msg = e.response?.data["detail"] ?? "Failed to submit";
       showSnack(context, msg.toString(), error: true);
     } finally {
-      setState(() => loading = false);
+      if (mounted) setState(() => loading = false); // ← ADDED mounted check in finally
     }
   }
 
@@ -63,7 +67,9 @@ class _StudentAdmissionScreenState extends State<StudentAdmissionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(backgroundColor: bg, elevation: 0,
+      appBar: AppBar(
+          backgroundColor: bg,
+          elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
             onPressed: () => Navigator.pop(context),
@@ -77,8 +83,12 @@ class _StudentAdmissionScreenState extends State<StudentAdmissionScreen> {
             const SizedBox(height: 28),
             buildCard(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               buildLabel("Admission ID"),
-              buildTextField(admissionCtrl, "e.g. UKF25CD030",
-                  capitalization: TextCapitalization.characters),
+              buildTextField(
+                admissionCtrl,
+                "e.g. UKF25CD030",
+                capitalization: TextCapitalization.characters,
+                onChanged: _onChanged, // ← ADDED onChanged connected here
+              ),
               const SizedBox(height: 8),
               // Auto detected info
               if (parsed != null) ...[
@@ -142,10 +152,11 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(children: [
       Text("$label: ",
-          style: const TextStyle(color: ash, fontSize: 12,
-              fontWeight: FontWeight.w600)),
-      Expanded(child: Text(value,
-          style: const TextStyle(color: white, fontSize: 12))),
+          style: const TextStyle(
+              color: ash, fontSize: 12, fontWeight: FontWeight.w600)),
+      Expanded(
+          child: Text(value,
+              style: const TextStyle(color: white, fontSize: 12))),
     ]);
   }
 }
