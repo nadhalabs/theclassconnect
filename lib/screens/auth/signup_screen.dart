@@ -43,7 +43,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 OtpScreen(email: emailCtrl.text.trim(), isSignUp: true)));
       }
     } on DioException catch (e) {
-      final msg = e.response?.data["detail"] ?? "Registration failed";
+      final msg = e.response?.data["detail"] ?? "Error: ${e.type} - ${e.message}";
       showSnack(context, msg.toString(), error: true);
     } finally {
       setState(() => loading = false);
