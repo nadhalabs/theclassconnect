@@ -1,90 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../config/api.dart';
-import '../theme/theme.dart';
-import 'home_screen.dart';
+import '../../config/api.dart';
+import '../../theme/theme.dart';
+import 'student_admission_screen.dart';
 
-const List<String> colleges = [
+const List<String> _colleges = [
+  "UKF College of Engineering, Paripally",
   "MIT — Massachusetts Institute of Technology",
   "Stanford University",
   "Harvard University",
   "IIT Bombay",
   "IIT Delhi",
   "IIT Madras",
-  "University of Oxford",
-  "University of Cambridge",
-  "National University of Singapore",
-  "UC Berkeley",
-  "Caltech",
-  "ETH Zurich",
-  "University of Toronto",
-  "University of Melbourne",
-  "Delhi University",
-  "Amrita Vishwa Vidyapeetham",
   "BITS Pilani",
   "VIT University",
   "Anna University",
-  "Cochin University of Science and Technology",
 ];
 
-class CollegeScreen extends StatefulWidget {
+class StudentCollegeScreen extends StatefulWidget {
   final String email;
-  const CollegeScreen({super.key, required this.email});
+  final String name;
+  const StudentCollegeScreen({super.key, required this.email, required this.name});
   @override
-  State<CollegeScreen> createState() => _CollegeScreenState();
+  State<StudentCollegeScreen> createState() => _StudentCollegeScreenState();
 }
 
-class _CollegeScreenState extends State<CollegeScreen> {
+class _StudentCollegeScreenState extends State<StudentCollegeScreen> {
   final searchCtrl = TextEditingController();
   String? selected;
-  List<String> filtered = colleges;
-  bool loading = false;
+  List<String> filtered = _colleges;
 
   void _onSearch(String q) {
     setState(() {
-      filtered = colleges
+      filtered = _colleges
           .where((c) => c.toLowerCase().contains(q.toLowerCase()))
           .toList();
     });
-  }
-
-  Future<void> _saveCollege() async {
-    if (selected == null) return;
-    setState(() => loading = true);
-    try {
-      final res = await dio.post("/auth/college", data: {
-        "email": widget.email,
-        "college": selected,
-      });
-      if (res.statusCode == 200) {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()), (_) => false);
-      }
-    } on DioException catch (e) {
-      final msg = e.response?.data["detail"] ?? "Failed to save college";
-      showSnack(context, msg.toString(), error: true);
-    } finally {
-      setState(() => loading = false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: bg, elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
+            onPressed: () => Navigator.pop(context),
+          )),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            buildPageTitle("Connect to your\ninstitution",
-                "Search and select your college or school."),
+            buildPageTitle("Select your college",
+                "Search and select your institution."),
             const SizedBox(height: 24),
             TextField(
               controller: searchCtrl,
@@ -92,7 +60,7 @@ class _CollegeScreenState extends State<CollegeScreen> {
               style: const TextStyle(color: white, fontSize: 14),
               cursorColor: accent,
               decoration: InputDecoration(
-                hintText: "Search college or school...",
+                hintText: "Search college...",
                 hintStyle: const TextStyle(color: Color(0xFF3A3A3A)),
                 filled: true,
                 fillColor: surfaceMid,
@@ -139,8 +107,7 @@ class _CollegeScreenState extends State<CollegeScreen> {
                                   ? FontWeight.w700 : FontWeight.w400)),
                       trailing: isSelected
                           ? const Icon(Icons.check_circle_rounded,
-                          color: accent, size: 18)
-                          : null,
+                          color: accent, size: 18) : null,
                     );
                   },
                 ),
@@ -148,11 +115,15 @@ class _CollegeScreenState extends State<CollegeScreen> {
             ),
             const SizedBox(height: 16),
             buildPrimaryButton(
-              selected == null
-                  ? "Select a college to continue"
-                  : "Join ${selected!.split('—').first.trim()}",
-              selected == null ? null : _saveCollege,
-              loading: loading,
+              selected == null ? "Select a college to continue" : "Continue",
+              selected == null ? null : () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) =>
+                        StudentAdmissionScreen(
+                            email: widget.email,
+                            name: widget.name,
+                            college: selected!)));
+              },
             ),
             const SizedBox(height: 12),
           ]),

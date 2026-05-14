@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../config/api.dart';
-import '../theme/theme.dart';
+import '../../config/api.dart';
+import '../../theme/theme.dart';
 import 'signup_screen.dart';
 import 'otp_screen.dart';
-import 'home_screen.dart';
+import '../home/student_home.dart';
+import '../home/advisor_home.dart';
+import '../home/subject_teacher_home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -13,37 +15,58 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final emailCtrl = TextEditingController();
-  final passCtrl  = TextEditingController();
-  bool showPass   = false;
-  bool loading    = false;
+  final usernameCtrl = TextEditingController();
+  final passCtrl     = TextEditingController();
+  bool showPass      = false;
+  bool loading       = false;
 
   Future<void> _login() async {
-    if (emailCtrl.text.isEmpty || passCtrl.text.isEmpty) {
+    if (usernameCtrl.text.isEmpty || passCtrl.text.isEmpty) {
       showSnack(context, "Please fill all fields", error: true);
       return;
     }
-
     setState(() => loading = true);
-
     try {
       final res = await dio.post("/auth/login", data: {
-        "email": emailCtrl.text.trim(),
+        "username": usernameCtrl.text.trim(),
         "password": passCtrl.text.trim(),
       });
 
       if (res.statusCode == 200) {
-        Navigator.pushAndRemoveUntil(context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-            (_) => false);
+        final data = res.data;
+        final role = data["role"] ?? "";
+        final teacherType = data["teacher_type"] ?? "";
+
+        if (role == "student") {
+          final approved = data["is_approved"] ?? false;
+          Navigator.pushAndRemoveUntil(context,
+              MaterialPageRoute(builder: (_) => StudentHome(
+                  email: data["email"],
+                  name: data["full_name"] ?? "",
+                  stream: data["stream"] ?? "",
+                  semester: data["semester"] ?? "",
+                  isApproved: approved)),
+              (_) => false);
+        } else if (role == "teacher" && teacherType == "advisor") {
+          Navigator.pushAndRemoveUntil(context,
+              MaterialPageRoute(builder: (_) => AdvisorHome(
+                  email: data["email"],
+                  name: data["full_name"] ?? "")),
+              (_) => false);
+        } else if (role == "teacher" && teacherType == "subject") {
+          Navigator.pushAndRemoveUntil(context,
+              MaterialPageRoute(builder: (_) => SubjectTeacherHome(
+                  email: data["email"],
+                  name: data["full_name"] ?? "")),
+              (_) => false);
+        }
       }
     } on DioException catch (e) {
       final msg = e.response?.data["detail"] ?? "Login failed";
       if (msg.toString().contains("not verified")) {
         Navigator.push(context,
-            MaterialPageRoute(
-                builder: (_) => OtpScreen(
-                    email: emailCtrl.text.trim(), isSignUp: false)));
+            MaterialPageRoute(builder: (_) =>
+                OtpScreen(email: usernameCtrl.text.trim(), isSignUp: false)));
       } else {
         showSnack(context, msg.toString(), error: true);
       }
@@ -87,9 +110,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 style: TextStyle(color: ash, fontSize: 13.5)),
             const SizedBox(height: 32),
             buildCard(Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              buildLabel("Email"),
-              buildTextField(emailCtrl, "you@example.com",
-                  keyboardType: TextInputType.emailAddress),
+              buildLabel("Username"),
+              buildTextField(usernameCtrl, "@yourusername"),
               const SizedBox(height: 14),
               buildLabel("Password"),
               buildTextField(passCtrl, "••••••••",

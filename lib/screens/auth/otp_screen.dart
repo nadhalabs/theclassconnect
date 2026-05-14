@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../config/api.dart';
-import '../theme/theme.dart';
+import '../../config/api.dart';
+import '../../theme/theme.dart';
 import 'profile_screen.dart';
-import 'home_screen.dart';
+import '../home/student_home.dart';
 
 class OtpScreen extends StatefulWidget {
   final String email;
@@ -36,10 +36,14 @@ class _OtpScreenState extends State<OtpScreen> {
         showSnack(context, "Email verified!");
         if (widget.isSignUp) {
           Navigator.push(context,
-              MaterialPageRoute(builder: (_) => ProfileScreen(email: widget.email)));
+              MaterialPageRoute(builder: (_) =>
+                  ProfileScreen(email: widget.email)));
         } else {
           Navigator.pushAndRemoveUntil(context,
-              MaterialPageRoute(builder: (_) => const HomeScreen()), (_) => false);
+              MaterialPageRoute(builder: (_) =>
+                  StudentHome(email: widget.email, name: "",
+                      stream: "", semester: "", isApproved: false)),
+              (_) => false);
         }
       }
     } on DioException catch (e) {
@@ -50,27 +54,15 @@ class _OtpScreenState extends State<OtpScreen> {
     }
   }
 
-  Future<void> _resend() async {
-    try {
-      await dio.post("/auth/resend-otp",
-          data: {"email": widget.email, "password": ""});
-      showSnack(context, "OTP resent!");
-    } catch (_) {
-      showSnack(context, "Failed to resend OTP", error: true);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: bg, elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
+            onPressed: () => Navigator.pop(context),
+          )),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
@@ -80,7 +72,19 @@ class _OtpScreenState extends State<OtpScreen> {
             Text(widget.email,
                 style: const TextStyle(color: accent, fontSize: 14,
                     fontWeight: FontWeight.w600)),
-            const SizedBox(height: 28),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: surfaceMid,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: border),
+              ),
+              child: const Text("DEV MODE: Use 123456 as your OTP",
+                  style: TextStyle(color: pendingColor, fontSize: 12,
+                      fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 24),
             buildCard(Column(children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -123,7 +127,7 @@ class _OtpScreenState extends State<OtpScreen> {
               const SizedBox(height: 16),
               Center(
                 child: GestureDetector(
-                  onTap: _resend,
+                  onTap: () {},
                   child: const Text("Resend code",
                       style: TextStyle(color: ash, fontSize: 13,
                           fontWeight: FontWeight.w500)),

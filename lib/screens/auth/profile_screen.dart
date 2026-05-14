@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../config/api.dart';
-import '../theme/theme.dart';
-import 'college_screen.dart';
+import '../../config/api.dart';
+import '../../theme/theme.dart';
+import '../onboarding/role_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String email;
@@ -51,7 +51,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
       if (res.statusCode == 200) {
         Navigator.push(context,
-            MaterialPageRoute(builder: (_) => CollegeScreen(email: widget.email)));
+            MaterialPageRoute(builder: (_) =>
+                RoleScreen(email: widget.email,
+                    name: nameCtrl.text.trim())));
       }
     } on DioException catch (e) {
       final msg = e.response?.data["detail"] ?? "Failed to save profile";
@@ -65,13 +67,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: bg, elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
+            onPressed: () => Navigator.pop(context),
+          )),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

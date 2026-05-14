@@ -1,14 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import auth, college 
+from routes import auth, college, advisor
 from database import engine, Base
 
-# Create all tables
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ClassConnect API")
 
-# Allow Flutter app to connect
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,9 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routes
 app.include_router(auth.router, prefix="/auth", tags=["Auth"])
 app.include_router(college.router, prefix="/college", tags=["College"])
+app.include_router(advisor.router, prefix="/advisor", tags=["Advisor"])
 
 @app.get("/")
 def root():

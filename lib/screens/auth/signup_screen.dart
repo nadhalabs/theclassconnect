@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import '../config/api.dart';
-import '../theme/theme.dart';
+import '../../config/api.dart';
+import '../../theme/theme.dart';
 import 'otp_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
@@ -30,17 +30,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
       showSnack(context, "Password must be at least 6 characters", error: true);
       return;
     }
-
     setState(() => loading = true);
-
     try {
       final res = await dio.post("/auth/register", data: {
         "email": emailCtrl.text.trim(),
         "password": passCtrl.text.trim(),
       });
-
       if (res.statusCode == 200) {
-        showSnack(context, "OTP sent to your email!");
+        showSnack(context, "OTP sent! Use 123456 for now");
         Navigator.push(context,
             MaterialPageRoute(builder: (_) =>
                 OtpScreen(email: emailCtrl.text.trim(), isSignUp: true)));
@@ -57,13 +54,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: bg, elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(backgroundColor: bg, elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: ash, size: 18),
+            onPressed: () => Navigator.pop(context),
+          )),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),

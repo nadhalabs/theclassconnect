@@ -1,12 +1,10 @@
 import 'package:dio/dio.dart';
 
-const String baseUrl = "https://theclassconnect.onrender.com"; // iOS simulator
-// const String baseUrl = "http://localhost:8000"; // iOS simulator
-// const String baseUrl = "https://your-render-url.onrender.com"; // Production
+const String baseUrl = "https://theclassconnect.onrender.com";
 
 final Dio dio = Dio(BaseOptions(
   baseUrl: baseUrl,
-  connectTimeout: const Duration(seconds: 10),
-  receiveTimeout: const Duration(seconds: 10),
+  connectTimeout: const Duration(seconds: 15),
+  receiveTimeout: const Duration(seconds: 15),
   headers: {"Content-Type": "application/json"},
 ));
